@@ -22,7 +22,7 @@ variable called `GITHUB_TOKEN`.
     
 #### Google 
 
-Follow these instructions to create *a service account*: https://developers.google.com/console/help/new/?hl=en_US#credentials-access-security-and-identity
+Follow these instructions to create *a service account*: https://developers.google.com/identity/protocols/OAuth2ServiceAccount
     
 Creating a service account will generate a special client email address and
 a new private key. The client email address should be stored in an environment 

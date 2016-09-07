@@ -1,4 +1,4 @@
-# Schedule App Data Processor
+# MozFest Event App Data Processor
 
 This script is designed as a data processor helper for [schedule app core](https://github.com/mozilla/schedule-app-core/). If you want to use this script as is make sure your Google Spreasheet is based on the [Google spreadsheet template we designed]() [TODO: add link to Google spreadsheet template].
 

@@ -89,7 +89,6 @@ def fetch_worksheets(spreadsheet, multiple_sheets=False, sessions_worksheets_to_
         # Return data from first worksheet in Google spreadsheet.
         worksheet = spreadsheet.get_worksheet(0)
         data = worksheet.get_all_records(empty2zero=False)
-
     else:
         # Return data from all worksheets in sessions_worksheets_to_fetch
         data = []
@@ -114,7 +113,6 @@ def transform_timeblock_data(data):
 
         # make sure vars are strings
         _transformed_item = {k: unicode(v) for k, v in item.iteritems() if k}
-        
         # remove rows that are blank or used for providing instructions
         if _transformed_item['day'] and _transformed_item['day'].find('select from dropdown') == -1 and _transformed_item['start time']:
             skip = False
@@ -188,7 +186,7 @@ def transform_session_data(data):
     * creates a `timeblock` key based on data in `time` column
     * creates Saturday and Sunday versions of sessions marked 'all-weekend'
     * infers a `day` and `start` key based on data in `time` column
-    * prepends `location` with the word 'Floor' 
+    * labels `everyone` session
     '''
     def _transform_response_item(item, skip=False):
         # make sure vars are strings
@@ -291,6 +289,12 @@ def transform_session_data(data):
         # prepend `location` with the word 'Floor'
         # if _transformed_item['location'] and not _transformed_item['location'].startswith('Floor'):
         #     _transformed_item['location'] = 'Floor {0}'.format(_transformed_item['location'])
+
+        isEverySession = _transformed_item.pop('everyone session', '')
+        if isEverySession == 'TRUE':
+            _transformed_item['everyone'] = True
+        else:
+            _transformed_item['everyone'] = False
                 
         # if we've triggered the skip flag anywhere, drop this record
         if skip:

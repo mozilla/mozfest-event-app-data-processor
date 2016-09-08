@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging.config import dictConfig
 from oauth2client.client import SignedJwtAssertionCredentials
 from helper import parseListFromEnvVar
@@ -253,39 +253,33 @@ def transform_session_data(data):
             _transformed_item['day'] = 'Saturday'
         if 'Sunday' in time_data:
             _transformed_item['day'] = 'Sunday'
-        # if 'all-s' in _transformed_item['timeblock']:
-        #     _transformed_item['start'] = 'All Day'
+
         # start time
         if len(time_data) > 1:
             start_time = time_data.split('(')
             start_time = start_time[len(start_time)-1].strip(')')[-5:] # return the last 5 character
+            duration = _transformed_item.pop('duration', '') or 0
+
             try:
                 # attempt to coerce to 12-hour format
                 d = datetime.strptime(start_time, "%H:%M")
-                start_time = d.strftime("%I:%M %p")
+                start_time = d.strftime("%I:%M%p").lstrip('0') # strip leading 0
+                duration = int(duration)
+                end_time = (d+timedelta(minutes=duration)).strftime("%I:%M%p").lstrip('0') # strip leading 0
+
                 if start_time[0] == '0':
                     # strip leading 0
                     start_time =  start_time[1:]
+
             except:
                 start_time = ''
+                end_time = ''
                 pass
             _transformed_item['start'] = start_time
-        # create Saturday and Sunday versions of sessions marked 'all-weekend'
-        if 'weekend' in _transformed_item['timeblock']:
-            _transformed_item['start'] = 'All Weekend'
-            if 'clone_flag' in item:
-                _transformed_item['timeblock'] = 'all-sunday'
-                _transformed_item['day'] = 'Sunday'
-                _transformed_item['start'] = 'All Day'
-            else:
-                _transformed_item['timeblock'] = 'all-saturday'
-                _transformed_item['day'] = 'Saturday'
-                _transformed_item['start'] = 'All Day'
-                # create a cloned version for Sunday
-                cloned_item = item.copy()
-                cloned_item['clone_flag'] = True
-                cloned_data.append(cloned_item)
+            _transformed_item['end'] = end_time
+        
 
+         
         # prepend `location` with the word 'Floor'
         # if _transformed_item['location'] and not _transformed_item['location'].startswith('Floor'):
         #     _transformed_item['location'] = 'Floor {0}'.format(_transformed_item['location'])

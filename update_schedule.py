@@ -263,9 +263,10 @@ def transform_session_data(data):
             try:
                 # attempt to coerce to 12-hour format
                 d = datetime.strptime(start_time, "%H:%M")
-                start_time = d.strftime("%I:%M%p").lstrip('0') # strip leading 0
+                start_time = d.strftime("%I:%M").lstrip('0') + d.strftime('%p').lower()
                 duration = int(duration)
-                end_time = (d+timedelta(minutes=duration)).strftime("%I:%M%p").lstrip('0') # strip leading 0
+                end_time = d + timedelta(minutes=duration)
+                end_time = end_time.strftime("%I:%M").lstrip('0') + end_time.strftime('%p').lower()
 
                 if start_time[0] == '0':
                     # strip leading 0

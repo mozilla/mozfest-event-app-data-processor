@@ -181,7 +181,8 @@ def transform_session_data(data):
     * transforms column name `name` into JSON key `title`
     * transforms column name `id` into JSON key `id`
     * removes any rows that don't have a numeric `id`
-    * creates a concatenated `facilitators` key
+    * creates a `facilitators` dict
+    * creates a `facilitators_names` name list
     * removes invalid pathway labels that were used for GitHub workflow
     * creates a `timeblock` key based on data in `time` column
     * creates Saturday and Sunday versions of sessions marked 'all-weekend'
@@ -203,27 +204,41 @@ def transform_session_data(data):
         
         # set `id` key
         # (and skip rows without a valid id)
-        if 'id' in _transformed_item:
-            _transformed_item['id'] = _transformed_item.pop('id', '')
+        if 'session id' in _transformed_item:
+            _transformed_item['id'] = _transformed_item.pop('session id', '')
 
-            # remove rows with `id` that is blank or provides instructions
-            try:
-                int(_transformed_item['id'])
-            except:
+            # remove rows with `session id` that is blank or provides instructions
+            if len(_transformed_item['id'].split(" ")) != 1:
                 skip = True
         
-        # create concatenated `facilitators` key for schedule list display
-        # and `facilitator_array` key for session detail display
-        name_list = []
-        name_detail_list = []
+        # create `facilitators` key
+        facilitators = {}
+        facilitators_names = []
         for key in _transformed_item.keys():
             if key.startswith('facilitator'):
-                order = key[len('facilitator'):].strip() # facilitator order in spreadsheet
-                index = int(order)-1 # order start from 1 but list index start from 0
-                name_list.insert(index,_transformed_item[key].split(",")[0])
-                name_detail_list.insert(index,_transformed_item.pop(key))
-        _transformed_item['facilitators'] = ', '.join(filter(None, name_list))
-        _transformed_item['facilitator_array'] = filter(None, name_detail_list)
+                facilitatorObj = {}
+                wordList = key.split(" ")
+                facilitatorNumber = wordList[1]
+                metaType = wordList[2]
+                metaValue = _transformed_item.pop(key)
+
+                if facilitatorNumber not in facilitators:
+                    facilitators[facilitatorNumber] = facilitatorObj
+                else:
+                    facilitatorObj = facilitators[facilitatorNumber]
+
+                if metaType == 'name':
+                    facilitatorObj['name'] = metaValue
+                    facilitators_names.insert(int(facilitatorNumber)-1,metaValue)
+                elif metaType == 'twitter':
+                    facilitatorObj['twitter'] = metaValue
+                elif metaType == 'affiliated':
+                    facilitatorObj['affiliated org'] = metaValue
+
+                facilitators[facilitatorNumber] = facilitatorObj
+
+        _transformed_item['facilitators'] = facilitators
+        _transformed_item['facilitators_names'] = facilitators_names
 
         # remove invalid pathway labels that were used for GitHub workflow
         pathway_skip_keywords = ['accepted','consideration','stipend','sample']

@@ -37,6 +37,11 @@ SESSIONS_WORKSHEETS_TO_FETCH = parseListFromEnvVar(os.environ['SESSIONS_WORKSHEE
 # PROMPT_BEFORE_COMMIT_TO_GITHUB. Default value False.
 PROMPT_BEFORE_COMMIT_TO_GITHUB = True if 'PROMPT_BEFORE_COMMIT_TO_GITHUB' in os.environ and os.environ['PROMPT_BEFORE_COMMIT_TO_GITHUB'] == 'True' else False
 
+# custom [category] label in source spreadsheet, e.g., for MozFest 2016 this spreadsheet column is called "space"
+CUSTOM_CATEGORY_LABEL = os.environ['CUSTOM_CATEGORY_LABEL'] if 'CUSTOM_CATEGORY_LABEL' in os.environ and len(os.environ['CUSTOM_CATEGORY_LABEL']) > 0 else 'category'
+# custom [tags] label in source spreadsheet, e.g., for MozFest 2016 this spreadsheet column is called "pathways"
+CUSTOM_TAGS_LABEL = os.environ['CUSTOM_TAGS_LABEL'] if 'CUSTOM_TAGS_LABEL' in os.environ and len(os.environ['CUSTOM_TAGS_LABEL']) > 0 else 'tags'
+
 GITHUB_CONFIG = {
     'TOKEN': os.environ['GITHUB_TOKEN'],
     'REPO_OWNER': os.environ['REPO_OWNER'],
@@ -183,7 +188,8 @@ def transform_session_data(data):
     * removes any rows that don't have a numeric `id`
     * creates a `facilitators` dict
     * creates a `facilitators_names` name list
-    * removes invalid pathway labels that were used for GitHub workflow
+    * transform column name "CUSTOM_CATEGORY_LABEL" into JSON key `category`
+    * remove invalid tag labels that were used for GitHub workflow and transform column name "CUSTOM_TAGS_LABEL" into JSON key `tags`
     * creates a `timeblock` key based on data in `time` column
     * creates Saturday and Sunday versions of sessions marked 'all-weekend'
     * infers a `day` and `start` key based on data in `time` column
@@ -194,12 +200,9 @@ def transform_session_data(data):
         _transformed_item = {k: unicode(v) for k, v in item.iteritems() if k}
         
         # transform `name` column name into `title` key
-        # and skip rows that represent pathways, or have no name
         if 'name' in _transformed_item:
             _transformed_item['title'] = _transformed_item.pop('name', '')
             if not _transformed_item['title']:
-                skip = True
-            if _transformed_item['title'].lower().startswith('[path'):
                 skip = True
         
         # set `id` key
@@ -240,13 +243,18 @@ def transform_session_data(data):
         _transformed_item['facilitators'] = facilitators
         _transformed_item['facilitators_names'] = facilitators_names
 
-        # remove invalid pathway labels that were used for GitHub workflow
-        pathway_skip_keywords = ['accepted','consideration','stipend','sample']
-        pathway_list = _transformed_item['tags'].split(',')
-        pathway_list = [
-            name for name in pathway_list if not set(pathway_skip_keywords).intersection(set(name.lower().split()))
+        # transform column name "CUSTOM_CATEGORY_LABEL" into JSON key `category`
+        print CUSTOM_CATEGORY_LABEL
+        _transformed_item['category'] = _transformed_item.pop(CUSTOM_CATEGORY_LABEL, '')
+
+        # remove invalid tag labels that were used for GitHub workflow and transform column name "CUSTOM_TAGS_LABEL" into JSON key `tags`
+        tag_skip_keywords = ['accepted','consideration','stipend','sample']
+        tag_list = _transformed_item[CUSTOM_TAGS_LABEL].split(',')
+        tag_list = [
+            name for name in tag_list if not set(tag_skip_keywords).intersection(set(name.lower().split()))
         ]
-        _transformed_item['tags'] = ','.join(pathway_list)
+        _transformed_item['tags'] = ','.join(tag_list)
+        _transformed_item.pop(CUSTOM_TAGS_LABEL, '')
 
         # create `timeblock` key based on `timeblock`
         time_data = _transformed_item.pop('timeblock', '')

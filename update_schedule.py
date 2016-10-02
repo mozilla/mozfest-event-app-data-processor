@@ -301,10 +301,10 @@ def transform_session_data(data):
         #     _transformed_item['location'] = 'Floor {0}'.format(_transformed_item['location'])
 
         # mark as "programmatic" session if session's category is 'Programmatic Pieces'
-        # removes category meta since 'Programmatic Pieces' isn't a real [category] (e.g, MozFest Space)
+        # clelar category meta since 'Programmatic Pieces' isn't a real [category] (e.g, MozFest Space)
         _transformed_item['programmatic'] = True if _transformed_item['category'] == 'Programmatic Pieces' else False
         if _transformed_item['programmatic']:
-            _transformed_item['category'] = None
+            _transformed_item['category'] = ''
                 
         # if we've triggered the skip flag anywhere, drop this record
         if skip:

@@ -124,12 +124,6 @@ def transform_timeblock_data(data):
         else:
             skip = True
 
-        #
-        if 'reserved for everyone' in _transformed_item:
-            reserved_for_everyone = _transformed_item.pop('reserved for everyone', '')
-            if reserved_for_everyone:
-                _transformed_item['reserved for everyone'] = reserved_for_everyone
-
         # transform `Auto Generated. Do Not Modify.` column name into `key` key
         if 'Auto Generated. Do Not Modify.' in _transformed_item:
             _transformed_item['key'] = slugify_timeblock(_transformed_item.pop('Auto Generated. Do Not Modify.', ''))
@@ -193,7 +187,7 @@ def transform_session_data(data):
     * creates a `timeblock` key based on data in `time` column
     * creates Saturday and Sunday versions of sessions marked 'all-weekend'
     * infers a `day` and `start` key based on data in `time` column
-    * labels `everyone` session
+    * labels `programmatic` session
     '''
     def _transform_response_item(item, skip=False):
         # make sure vars are strings
@@ -244,7 +238,6 @@ def transform_session_data(data):
         _transformed_item['facilitators_names'] = facilitators_names
 
         # transform column name "CUSTOM_CATEGORY_LABEL" into JSON key `category`
-        print CUSTOM_CATEGORY_LABEL
         _transformed_item['category'] = _transformed_item.pop(CUSTOM_CATEGORY_LABEL, '')
 
         # remove invalid tag labels that were used for GitHub workflow and transform column name "CUSTOM_TAGS_LABEL" into JSON key `tags`
@@ -302,17 +295,16 @@ def transform_session_data(data):
             _transformed_item['start'] = start_time
             _transformed_item['end'] = end_time
         
-
          
         # prepend `location` with the word 'Floor'
         # if _transformed_item['location'] and not _transformed_item['location'].startswith('Floor'):
         #     _transformed_item['location'] = 'Floor {0}'.format(_transformed_item['location'])
 
-        isEverySession = _transformed_item.pop('everyone session', '')
-        if isEverySession == 'TRUE':
-            _transformed_item['everyone'] = True
-        else:
-            _transformed_item['everyone'] = False
+        # mark as "programmatic" session if session's category is 'Programmatic Pieces'
+        # removes category meta since 'Programmatic Pieces' isn't a real [category] (e.g, MozFest Space)
+        _transformed_item['programmatic'] = True if _transformed_item['category'] == 'Programmatic Pieces' else False
+        if _transformed_item['programmatic']:
+            _transformed_item['category'] = None
                 
         # if we've triggered the skip flag anywhere, drop this record
         if skip:

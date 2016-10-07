@@ -254,9 +254,10 @@ def transform_session_data(data):
             hasArVrMachineLearning = True
             tags = tags.replace(troublesome_tag,"")
 
-        # we wrap each value with double quotes in the spreadsheet
-        # double quotes are irrelevant to the actual value, let's remove them
-        tag_list = tags.replace("\"","").split(',')
+        # We wrap each value with double quotes in the spreadsheet.
+        # Double quotes are irrelevant to the actual value, let's remove them.
+        # filter(None, list) removes empty item from list
+        tag_list = filter(None,tags.replace("\"","").split(','))
 
         # we don't want random [tags] to be included
         for index, name in enumerate(tag_list):

@@ -241,12 +241,34 @@ def transform_session_data(data):
         _transformed_item['category'] = _transformed_item.pop(CUSTOM_CATEGORY_LABEL, '')
 
         # remove invalid tag labels that were used for GitHub workflow and transform column name "CUSTOM_TAGS_LABEL" into JSON key `tags`
+        tags = _transformed_item[CUSTOM_TAGS_LABEL]
         tag_skip_keywords = ['accepted','consideration','stipend','sample']
-        tag_list = _transformed_item[CUSTOM_TAGS_LABEL].split(',')
-        tag_list = [
-            name for name in tag_list if not set(tag_skip_keywords).intersection(set(name.lower().split()))
-        ]
-        _transformed_item['tags'] = ','.join(tag_list)
+        accepted_tags = ['AR, VR & Machine Learning','Advocacy & Web Literacy','Digital Inclusion','The Future of the Web','Multi-lingual MozFest','Storytelling']
+
+        # Since "AR, VR & Machine Learning" contains a comma, 
+        # it makes it troublesome to turn the string into a list using the split(",") method
+        # Let's remove it from the string first and add it back to the list after
+        troublesome_tag = 'AR, VR & Machine Learning'
+        hasArVrMachineLearning = False
+        if troublesome_tag in tags:
+            hasArVrMachineLearning = True
+            tags = tags.replace(troublesome_tag,"")
+
+        # we wrap each value with double quotes in the spreadsheet
+        # double quotes are irrelevant to the actual value, let's remove them
+        tag_list = tags.replace("\"","").split(',')
+
+        # we don't want random [tags] to be included
+        for index, name in enumerate(tag_list):
+            if name.lower().strip() in [ accepted_tag.lower() for accepted_tag in accepted_tags ]:
+                tag_list[index] = name.strip()
+            else:
+                tag_list.remove(name)
+
+        if hasArVrMachineLearning is True:
+            tag_list.append(troublesome_tag)
+
+        _transformed_item['tags'] = tag_list
         _transformed_item.pop(CUSTOM_TAGS_LABEL, '')
 
         # create `timeblock` key based on `timeblock`

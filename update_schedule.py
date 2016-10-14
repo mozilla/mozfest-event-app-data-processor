@@ -202,10 +202,10 @@ def transform_session_data(data):
         # set `id` key
         # (and skip rows without a valid id)
         if 'session id' in _transformed_item:
-            _transformed_item['id'] = _transformed_item.pop('session id', '')
+            _transformed_item['id'] = _transformed_item.pop('session id', '').strip()
 
             # remove rows with `session id` that is blank or provides instructions
-            if len(_transformed_item['id'].split(" ")) != 1:
+            if len(_transformed_item['id']) == 0 or len(_transformed_item['id'].split(" ")) != 1:
                 skip = True
         
         # create `facilitators` key

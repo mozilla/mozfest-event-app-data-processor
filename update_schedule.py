@@ -328,7 +328,12 @@ def transform_session_data(data):
         _transformed_item['programmatic'] = True if _transformed_item['category'] == 'Programmatic Pieces' else False
         if _transformed_item['programmatic']:
             _transformed_item['category'] = ''
-                
+
+        # trim leading and trailing whitespaces from string based meta
+        for key in _transformed_item.keys():
+            if isinstance(_transformed_item[key], basestring) is True:
+                _transformed_item[key] = _transformed_item[key].strip()
+
         # if we've triggered the skip flag anywhere, drop this record
         if skip:
             _transformed_item = None

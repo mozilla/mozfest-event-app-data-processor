@@ -188,6 +188,7 @@ def transform_session_data(data):
     * creates Saturday and Sunday versions of sessions marked 'all-weekend'
     * infers a `day` and `start` key based on data in `time` column
     * labels `programmatic` session
+    * validates `notes url` so only one url is included
     '''
     def _transform_response_item(item, skip=False):
         # make sure vars are strings
@@ -328,6 +329,10 @@ def transform_session_data(data):
         _transformed_item['programmatic'] = True if _transformed_item['category'] == 'Programmatic Pieces' else False
         if _transformed_item['programmatic']:
             _transformed_item['category'] = ''
+
+        # `notes url` validator
+        if 'notes url' in _transformed_item:
+            _transformed_item['notes url'] = _transformed_item.pop('notes url', '').split(" ")[0].strip()
 
         # trim leading and trailing whitespaces from string based meta
         for key in _transformed_item.keys():

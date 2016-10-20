@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import requests
+import base64
 from datetime import datetime, timedelta
 from logging.config import dictConfig
 from oauth2client.client import SignedJwtAssertionCredentials
@@ -390,21 +391,25 @@ def commit_json(data, target_config=GITHUB_CONFIG, commit=COMMIT_JSON_TO_GITHUB)
 
     for branch in target_config['TARGET_BRANCHES']:
         # check to see whether data file exists
-        contents = repo.contents(
-            path=file_path,
-            ref=branch
-        )
+        # the easiest way to check it is to rely on the Content API
+        # (https://developer.github.com/v3/repos/contents/#get-contents)
+        # but since this API supports files up to 1MB in size and our target file is often bigger than 1MB...
+        # we can only check the existence of the target file via a complicated way :(
+        branch_sha = repo.branch(branch).commit.sha
+        tree = repo.tree(branch_sha)
+        files_in_tree = tree.to_json()['tree']
+        # filter files in tree by our target file path
+        target_file = next(file for file in files_in_tree if file['path'] == file_path)
 
         confirm_commit = False
-
         if commit:
             if PROMPT_BEFORE_COMMIT_TO_GITHUB:
                 confirm_commit = raw_input("[Please Confirm] Commit " + file_path + " to repo " + repo_location + "? (Y/N): ")
             else:
                 confirm_commit = "Y"
 
-        if confirm_commit == "Y":
-            if not contents:
+        if confirm_commit.lower() == "y":
+            if not target_file:
                 # create file that doesn't exist
                 repo.create_file(
                     path=file_path,
@@ -414,15 +419,20 @@ def commit_json(data, target_config=GITHUB_CONFIG, commit=COMMIT_JSON_TO_GITHUB)
                 )
                 logger.info('Created new data file ' + file_path + ' in repo ' + repo_location)
             else:
+                # again, we can't rely on the Content API due to the 1MB file size limitation
+                # let's use Blobs API instead (https://developer.github.com/v3/git/blobs/)
+                blob = repo.blob(target_file['sha'])
+                contents = blob.content # encoded in base64
+                
                 # if data has changed, update existing file
-                if data.decode('utf-8') == contents.decoded.decode('utf-8'):
+                if data.decode('utf-8') == unicode(base64.b64decode(contents), 'utf-8'):
                     logger.info('Data has not changed, no commit created')
                 else:
                     repo.update_file(
                         path=file_path,
                         message='updating schedule data',
                         content=data,
-                        sha=contents.sha,
+                        sha=target_file['sha'],
                         branch=branch
                     )
                     logger.info('Data updated! Updated ' + file_path +' has been committed to repo ' + repo_location)
